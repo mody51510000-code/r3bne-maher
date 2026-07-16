@@ -93,12 +93,14 @@ class InputController {
   }
 
   detectDevice() {
-    // Simple check for touch screen
-    this.isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-    if (this.isMobile) {
-      document.getElementById('mobile-controls').style.display = 'flex';
-    } else {
-      document.getElementById('mobile-controls').style.display = 'none';
+    const ua = navigator.userAgent;
+    const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+    const isIPad = ua.includes("Macintosh") && navigator.maxTouchPoints > 1;
+    
+    this.isMobile = isMobileUA || isIPad;
+    const mobileUI = document.getElementById('mobile-controls');
+    if (mobileUI) {
+      mobileUI.style.display = this.isMobile ? 'flex' : 'none';
     }
   }
 
