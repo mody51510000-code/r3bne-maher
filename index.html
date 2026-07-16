@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>رعبني يا ماهر - 3D Horror Game</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Orbitron:wght@400;700;900&family=Readex+Pro:wght@300;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Dynamic Red Screen Vignette for Damage and Proximity Danger -->
+  <div id="danger-vignette" class="vignette"></div>
+  <div id="damage-vignette" class="vignette-damage"></div>
+
+  <!-- Background 3D Canvas (Shared across screens) -->
+  <canvas id="game-canvas"></canvas>
+
+  <!-- Sound Init Overlay (Required by browser autoplay policies) -->
+  <div id="sound-init-screen" class="overlay active">
+    <div class="glass-panel text-center">
+      <h1 class="flicker-text logo">رعبني يا ماهر</h1>
+      <p class="subtitle">اضغط للبدء وسماع الأصوات المخيفة 👻</p>
+      <button id="btn-init-audio" class="btn primary">دخول اللعبة</button>
+    </div>
+  </div>
+
+  <!-- Main Menu Screen -->
+  <div id="menu-screen" class="overlay">
+    <div class="menu-container">
+      <h1 class="flicker-text logo">رعبني يا ماهر</h1>
+      <p class="subtitle">هل تستطيع إخافة الجميع والنجاة من صائدي الأشباح؟</p>
+      
+      <div class="menu-buttons">
+        <button id="btn-start" class="btn primary">ابدأ اللعب</button>
+        <button id="btn-tutorial" class="btn secondary">كيفية اللعب</button>
+      </div>
+
+      <div class="credits">تصميم وبرمجة مؤيد ..... تقربا  ⚡</div>
+    </div>
+  </div>
+
+  <!-- Tutorial Modal -->
+  <div id="tutorial-modal" class="modal">
+    <div class="modal-content glass-panel">
+      <h2>كيفية اللعب 🎮</h2>
+      <div class="tutorial-grid">
+        <div class="tutorial-item">
+          <div class="icon">👻</div>
+          <h3>هدف اللعبة</h3>
+          <p>تسلل خلف البشر واضغط على زر التخويف لإرعابهم وملء عداد الخوف للمرور إلى المستوى التالي.</p>
+        </div>
+        <div class="tutorial-item">
+          <div class="icon">🔦</div>
+          <h3>احذر الضوء!</h3>
+          <p>في المستويات المتقدمة، يملك البشر كشافات وأسلحة. إذا سلطوا الضوء عليك، ستفقد طاقتك.</p>
+        </div>
+        <div class="tutorial-item">
+          <div class="icon">🚨</div>
+          <h3>عداد الخطر (الرادار)</h3>
+          <p>هناك صائد أشباح يلاحقك دائمًا من الخلف! راقب عداد الخطر الدائري ونبضات قلبك؛ إذا اقترب منك من الخلف سيقضي عليك!</p>
+        </div>
+        <div class="tutorial-item">
+          <div class="icon">🕹️</div>
+          <h3>التحكم</h3>
+          <p><strong>الكمبيوتر:</strong> WASD للحركة، الماوس للنظر، المسافة (Space) للتخويف، Shift للاندفاع، F لتشغيل الكشاف.<br><strong>الجوال:</strong> عصا التحكم على اليسار، السحب للنظر، وأزرار خاصة للتخويف والاندفاع والكشاف.</p>
+        </div>
+      </div>
+      <button id="btn-close-tutorial" class="btn secondary">حسناً، فهمت</button>
+    </div>
+  </div>
+
+  <!-- Character Customization Screen -->
+  <div id="customizer-screen" class="overlay">
+    <div class="customizer-layout">
+      <!-- Left side: 3D Preview (handled by separate viewport or canvas layout, we'll render it in the main canvas under a specific camera view) -->
+      <div class="preview-area">
+        <div class="preview-tag">معاينة الوحش</div>
+      </div>
+
+      <!-- Right side: customization panel -->
+      <div class="customizer-panel glass-panel">
+        <h2>صمم شبحك الخاص 💀</h2>
+        <p class="desc">اختر تفاصيل شبحك لتبدأ المغامرة</p>
+
+        <div class="options-container">
+          <!-- Shape -->
+          <div class="option-group">
+            <label>شكل الشبح</label>
+            <div class="button-row" id="group-shape">
+              <button class="btn-option active" data-value="blob">شبح طائر</button>
+              <button class="btn-option" data-value="spiky">طيف مشوك</button>
+              <button class="btn-option" data-value="demon">شبح شيطاني</button>
+            </div>
+          </div>
+
+          <!-- Color -->
+          <div class="option-group">
+            <label>لون الهالة المتوهجة</label>
+            <div class="color-row" id="group-color">
+              <button class="btn-color active" data-value="#00ffcc" style="background-color: #00ffcc;"></button> <!-- Cyan -->
+              <button class="btn-color" data-value="#ff0055" style="background-color: #ff0055;"></button> <!-- Pink Red -->
+              <button class="btn-color" data-value="#a020f0" style="background-color: #a020f0;"></button> <!-- Purple -->
+              <button class="btn-color" data-value="#39ff14" style="background-color: #39ff14;"></button> <!-- Neon Green -->
+              <button class="btn-color" data-value="#ffaa00" style="background-color: #ffaa00;"></button> <!-- Amber -->
+            </div>
+          </div>
+
+          <!-- Eyes -->
+          <div class="option-group">
+            <label>العينين</label>
+            <div class="button-row" id="group-eyes">
+              <button class="btn-option active" data-value="two-glow">عينين متوهجتين</button>
+              <button class="btn-option" data-value="cyclops">عين واحدة عملاقة</button>
+              <button class="btn-option" data-value="hollow">تجاويف مظلمة</button>
+            </div>
+          </div>
+
+          <!-- Accessories -->
+          <div class="option-group">
+            <label>الإضافات</label>
+            <div class="button-row" id="group-accessories">
+              <button class="btn-option active" data-value="none">لا شيء</button>
+              <button class="btn-option" data-value="horns">قرون رعب</button>
+              <button class="btn-option" data-value="halo">طوق متوهج</button>
+            </div>
+          </div>
+
+          <!-- Camera Perspective Selection -->
+          <div class="option-group">
+            <label>منظور اللعب</label>
+            <div class="button-row" id="group-camera">
+              <button class="btn-option active" data-value="first-person">شخص أول 👁️</button>
+              <button class="btn-option" data-value="third-person">شخص ثالث 👤</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Monster Stats Card -->
+        <div class="stats-card">
+          <label class="stats-title-label">خصائص الوحش 📊</label>
+          <div class="stat-row">
+            <span class="stat-label-text">السرعة:</span>
+            <div class="stat-bar-bg"><div id="stat-speed-bar" class="stat-bar-fill speed" style="width: 50%;"></div></div>
+            <span id="stat-speed-val" class="stat-value-text">متوسط</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label-text">نطاق الرعب:</span>
+            <div class="stat-bar-bg"><div id="stat-range-bar" class="stat-bar-fill range" style="width: 50%;"></div></div>
+            <span id="stat-range-val" class="stat-value-text">متوسط</span>
+          </div>
+          <div class="stat-row">
+            <span class="stat-label-text">مقاومة الضوء:</span>
+            <div class="stat-bar-bg"><div id="stat-regen-bar" class="stat-bar-fill regen" style="width: 50%;"></div></div>
+            <span id="stat-regen-val" class="stat-value-text">متوسط</span>
+          </div>
+        </div>
+
+        <div class="customizer-actions">
+          <button id="btn-enter-game" class="btn primary btn-block">دخول البيت المرعب 🚪</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gameplay HUD Overlay -->
+  <div id="hud" class="hud-overlay">
+    <!-- Top Bar: Progress and Level -->
+    <div class="hud-top-bar">
+      <div class="hud-stat-panel glass-panel level-avatar-panel">
+        <div id="hud-avatar-glow" class="hud-avatar-glow">👻</div>
+        <span class="hud-label">المستوى:</span>
+        <span id="hud-level-val" class="hud-value neon-blue">1</span>
+      </div>
+
+      <div class="hud-stat-panel progress-panel glass-panel">
+        <span class="hud-label" id="hud-scare-label">عداد الخوف:</span>
+        <div class="progress-bar-bg">
+          <div id="hud-scare-progress" class="progress-bar-fill" style="width: 0%;"></div>
+        </div>
+        <span id="hud-scare-val" class="hud-value-small">0 / 5</span>
+      </div>
+
+      <div class="hud-stat-panel glass-panel">
+        <span class="hud-label">الطاقة الروحية:</span>
+        <div class="health-bar-bg">
+          <div id="hud-health-bar" class="health-bar-fill" style="width: 100%;"></div>
+        </div>
+      </div>
+
+      <div class="hud-stat-panel glass-panel camera-toggle-panel" id="btn-hud-camera-toggle" style="cursor: pointer; pointer-events: auto;">
+        <span>🎥</span>
+        <span id="hud-camera-text" style="font-size: 0.85rem; font-weight: bold; color: #fff;">شخص أول</span>
+      </div>
+    </div>
+
+    <!-- Boss Health Bar (Visible in Level 5) -->
+    <div id="boss-hud" class="boss-hud-container hidden">
+      <div class="boss-label-row">
+        <span class="boss-name">زعيم صائدي الأشباح 🤖⚔️</span>
+        <span id="boss-health-val" class="boss-health-text">100%</span>
+      </div>
+      <div class="boss-health-bar-bg">
+        <div id="boss-health-bar-fill" class="boss-health-bar-fill" style="width: 100%;"></div>
+      </div>
+    </div>
+
+    <!-- Center screen message for level up / notices -->
+    <div id="screen-alert" class="screen-alert"></div>
+
+    <!-- Bottom Center: Threat Proximity Radar (عداد الخطر) -->
+    <div class="danger-radar-container">
+      <div class="danger-radar-wrapper">
+        <div id="danger-radar-glow" class="radar-glow green"></div>
+        <svg class="radar-svg" viewBox="0 0 100 100">
+          <!-- Circular grid -->
+          <circle cx="50" cy="50" r="45" class="radar-grid-line" />
+          <circle cx="50" cy="50" r="30" class="radar-grid-line" />
+          <circle cx="50" cy="50" r="15" class="radar-grid-line" />
+          <!-- Crosshairs -->
+          <line x1="50" y1="5" x2="50" y2="95" class="radar-grid-line" />
+          <line x1="5" y1="50" x2="95" y2="50" class="radar-grid-line" />
+          <!-- Player Indicator in Center -->
+          <circle cx="50" cy="50" r="3" class="radar-player-dot" />
+          <!-- Dynamic Enemy Indicator -->
+          <circle id="radar-threat-dot" cx="50" cy="50" r="4" class="radar-threat-dot hidden" />
+          <!-- Radar sweep effect -->
+          <circle cx="50" cy="50" r="45" class="radar-sweep" />
+        </svg>
+        <div class="radar-warning-text" id="radar-text">آمن</div>
+      </div>
+      <div class="radar-title">كاشف الخطر خلفك</div>
+    </div>
+
+    <!-- Mobile Virtual Joystick and Controls (only visible on mobile) -->
+    <div id="mobile-controls" class="mobile-controls-container">
+      <!-- Joystick zone -->
+      <div id="joystick-zone" class="joystick-zone">
+        <div class="joystick-base">
+          <div id="joystick-knob" class="joystick-knob"></div>
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="mobile-actions">
+        <button id="btn-mobile-flashlight" class="btn-round flashlight-btn">
+          <span>كشاف</span>
+          <small>LIGHT</small>
+        </button>
+        <button id="btn-mobile-dash" class="btn-round dash-btn">
+          <span>اندفاع</span>
+          <small>DASH</small>
+        </button>
+        <button id="btn-mobile-scare" class="btn-round scare-btn">
+          <span>أرعب!</span>
+          <small>SCARE</small>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Over Screen -->
+  <div id="gameover-screen" class="overlay">
+    <div class="menu-container glass-panel error-border">
+      <h1 class="flicker-text logo red">تم القضاء عليك! 💀</h1>
+      <p class="subtitle">لقد أمسك بك صائد الأشباح من الخلف وقام بتحييدك!</p>
+
+      <div class="gameover-stats">
+        <div class="stat-box">
+          <span class="stat-title">المستوى الذي وصلت إليه</span>
+          <span id="go-stat-level" class="stat-num neon-red">1</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-title">البشر الذين أرعبتهم</span>
+          <span id="go-stat-scared" class="stat-num neon-red">0</span>
+        </div>
+      </div>
+
+      <div class="menu-buttons">
+        <button id="btn-restart" class="btn primary red-bg">حاول مجدداً</button>
+        <button id="btn-go-menu" class="btn secondary">الشاشة الرئيسية</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Victory Screen -->
+  <div id="victory-screen" class="overlay">
+    <div class="menu-container glass-panel victory-border">
+      <h1 class="flicker-text logo green-text">ملك الرعب! 👑</h1>
+      <p class="subtitle">لقد تجاوزت جميع المستويات الصعبة وأرعبت كل من في البيت بنجاح!</p>
+
+      <div class="gameover-stats">
+        <div class="stat-box">
+          <span class="stat-title">المستويات المنجزة</span>
+          <span class="stat-num neon-green">3 / 3</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-title">إجمالي الخوف المتولد</span>
+          <span id="vic-stat-scared" class="stat-num neon-green">15</span>
+        </div>
+      </div>
+
+      <div class="menu-buttons">
+        <button id="btn-victory-restart" class="btn primary green-bg">اللعب مجدداً</button>
+        <button id="btn-vic-menu" class="btn secondary">الشاشة الرئيسية</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Include Scripts -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="src/audio.js"></script>
+  <script src="src/input.js"></script>
+  <script src="src/customizer.js"></script>
+  <script src="src/world.js"></script>
+  <script src="src/npc.js"></script>
+  <script src="src/main.js"></script>
+</body>
+</html>
